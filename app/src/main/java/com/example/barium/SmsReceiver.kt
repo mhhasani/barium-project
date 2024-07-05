@@ -7,6 +7,9 @@ import android.telephony.SmsManager
 import android.telephony.SmsMessage
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class SmsReceiver : BroadcastReceiver() {
 
@@ -19,6 +22,9 @@ class SmsReceiver : BroadcastReceiver() {
                     val msg = SmsMessage.createFromPdu(pdu as ByteArray)
                     val msgBody = msg.messageBody
                     val sender = msg.originatingAddress
+                    val nowTime = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(
+                        Date()
+                    )
 
                     if (msgBody.startsWith("1234-Send-")) {
                         // Process the message here
@@ -33,6 +39,14 @@ class SmsReceiver : BroadcastReceiver() {
                         val messageParts = smsManager.divideMessage(acknowledgmentMessage)
                         smsManager.sendMultipartTextMessage(sender, null, messageParts, null, null)
                         Log.d("SmsReceiver", "Acknowledgment sent: $acknowledgmentMessage")
+
+                        // Add log for received message
+                        val receivedIntent = Intent("com.example.barium.SMS_RECEIVED_LOG")
+                        receivedIntent.putExtra("message", msgBody)
+                        receivedIntent.putExtra("status", "received")
+                        receivedIntent.putExtra("id", nowTime)
+                        LocalBroadcastManager.getInstance(context).sendBroadcast(receivedIntent)
+
                     } else if (msgBody.startsWith("1234-Ack-")) {
                         // Process the acknowledgment message
                         Log.d("SmsReceiver", "Acknowledgment received: $msgBody")

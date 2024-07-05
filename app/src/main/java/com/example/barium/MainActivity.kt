@@ -80,6 +80,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val receivedLogReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val message = intent?.getStringExtra("message")
+            val status = intent?.getStringExtra("status")
+            val id = intent?.getStringExtra("id")
+            if (message != null && status != null && id != null) {
+                logAdapter.addLog(id, message, status)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -91,10 +102,14 @@ class MainActivity : AppCompatActivity() {
         requestPermissions()
         startSignalStrengthCheck()
 
-        // Register local broadcast receiver
+        // Register local broadcast receivers
         LocalBroadcastManager.getInstance(this).registerReceiver(
             acknowledgmentReceiver,
             IntentFilter("com.example.barium.SMS_ACKNOWLEDGMENT")
+        )
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            receivedLogReceiver,
+            IntentFilter("com.example.barium.SMS_RECEIVED_LOG")
         )
     }
 
@@ -339,8 +354,9 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null) // Stop the periodic task when activity is destroyed
 
-        // Unregister local broadcast receiver
+        // Unregister local broadcast receivers
         LocalBroadcastManager.getInstance(this).unregisterReceiver(acknowledgmentReceiver)
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(receivedLogReceiver)
     }
 
     fun onAcknowledgmentReceived(id: String) {
@@ -349,5 +365,4 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, actualId)
         logAdapter.updateLogStatus(actualId, "acknowledged")
     }
-
 }
