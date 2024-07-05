@@ -216,7 +216,7 @@ class MainActivity : AppCompatActivity() {
             val finalMessage = "$messageId: $message" // Adding a simple password for security and current time
             val messageParts = smsManager.divideMessage(finalMessage)
             smsManager.sendMultipartTextMessage(phoneNumber, null, messageParts, null, null)
-            logAdapter.addLog(messageId, finalMessage, "sent") // Add with status 'sent'
+            logAdapter.addLog(nowTime, finalMessage, "sent") // Add with status 'sent'
             Log.d(TAG, "SMS sent: $finalMessage")
         } catch (e: Exception) {
             Log.e(TAG, "SMS sending failed", e)
@@ -344,6 +344,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onAcknowledgmentReceived(id: String) {
-        logAdapter.updateLogStatus(id, "acknowledged")
+        // Extract the actual ID from the acknowledgment message id
+        val actualId = id.substringAfter("1234-Ack-")
+        Log.d(TAG, actualId)
+        logAdapter.updateLogStatus(actualId, "acknowledged")
     }
+
 }

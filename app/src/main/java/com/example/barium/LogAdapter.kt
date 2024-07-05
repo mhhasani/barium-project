@@ -22,7 +22,7 @@ class LogAdapter : RecyclerView.Adapter<LogAdapter.LogViewHolder>() {
         for (log in logs) {
             if (log.id == id) {
                 log.status = status
-                notifyDataSetChanged()
+                notifyItemChanged(logs.indexOf(log)) // فقط آیتمی که تغییر کرده را به‌روزرسانی کن
                 break
             }
         }
@@ -45,7 +45,7 @@ class LogAdapter : RecyclerView.Adapter<LogAdapter.LogViewHolder>() {
         fun bind(log: LogItem) {
             logTextView.text = log.message
             when (log.status) {
-                "sent" -> logTextView.setBackgroundColor(Color.BLACK)
+                "sent" -> logTextView.setBackgroundColor(Color.GRAY)
                 "acknowledged" -> logTextView.setBackgroundColor(Color.GREEN)
                 else -> logTextView.setBackgroundColor(Color.WHITE)
             }
