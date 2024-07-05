@@ -11,4 +11,10 @@
     <color name="primary">#3F51B5</color>
     <color name="primary_dark">#303F9F</color>
     <color name="ack_background">#00FF00</color>
+    <color name="primaryColor">#000000</color>
+    <color name="primaryLightColor">#4E4E51</color>
+    <color name="primaryDarkColor">#021402</color>
+    <color name="accentColor">#BB86FC</color>
+    <color name="textColor">#FFFFFF</color>
+    <color name="backgroundColor">#6A0674</color>
 </resources>
