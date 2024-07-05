@@ -212,10 +212,11 @@ class MainActivity : AppCompatActivity() {
         try {
             val smsManager = SmsManager.getDefault()
             val nowTime = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(Date())
-            val finalMessage = "1234-Send-$nowTime: $message" // Adding a simple password for security and current time
+            val messageId = "1234-Send-$nowTime"
+            val finalMessage = "$messageId: $message" // Adding a simple password for security and current time
             val messageParts = smsManager.divideMessage(finalMessage)
             smsManager.sendMultipartTextMessage(phoneNumber, null, messageParts, null, null)
-            logAdapter.addLog("SMS sent to $phoneNumber: $finalMessage", "sent") // Add with status 'sent'
+            logAdapter.addLog(messageId, finalMessage, "sent") // Add with status 'sent'
             Log.d(TAG, "SMS sent: $finalMessage")
         } catch (e: Exception) {
             Log.e(TAG, "SMS sending failed", e)

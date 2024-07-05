@@ -11,16 +11,16 @@ class LogAdapter : RecyclerView.Adapter<LogAdapter.LogViewHolder>() {
 
     private val logs = mutableListOf<LogItem>()
 
-    data class LogItem(val message: String, var status: String)
+    data class LogItem(val id: String, val message: String, var status: String)
 
-    fun addLog(log: String, status: String) {
-        logs.add(LogItem(log, status))
+    fun addLog(id: String, log: String, status: String) {
+        logs.add(LogItem(id, log, status))
         notifyItemInserted(logs.size - 1)
     }
 
     fun updateLogStatus(id: String, status: String) {
         for (log in logs) {
-            if (log.message.startsWith(id)) {
+            if (log.id == id) {
                 log.status = status
                 notifyDataSetChanged()
                 break
