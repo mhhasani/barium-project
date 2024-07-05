@@ -2,6 +2,10 @@ package com.example.barium
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
@@ -18,8 +22,11 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
     private lateinit var locationManager: LocationManager
@@ -45,15 +52,50 @@ class MainActivity : AppCompatActivity() {
         private const val MIN_SIGNAL_STRENGTH = -120 // Minimum realistic signal strength in dBm
     }
 
+    private val SMS_PERMISSION_CODE = 100
+
+    private fun checkAndRequestPermissions() {
+        val smsPermissions = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS
+        )
+
+        val permissionsToRequest = smsPermissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (permissionsToRequest.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), SMS_PERMISSION_CODE)
+        }
+    }
+
+    private val acknowledgmentReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val messageId = intent?.getStringExtra("message_id")
+            messageId?.let {
+                onAcknowledgmentReceived(it)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        checkAndRequestPermissions()
         initializeViews()
         setupSaveButton()
         initializeLocationManager()
         requestPermissions()
         startSignalStrengthCheck()
+
+        // Register local broadcast receiver
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            acknowledgmentReceiver,
+            IntentFilter("com.example.barium.SMS_ACKNOWLEDGMENT")
+        )
     }
 
     private fun initializeViews() {
@@ -169,10 +211,11 @@ class MainActivity : AppCompatActivity() {
         }
         try {
             val smsManager = SmsManager.getDefault()
-            val finalMessage = "1234: $message" // Adding a simple password for security
+            val nowTime = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(Date())
+            val finalMessage = "1234-Send-$nowTime: $message" // Adding a simple password for security and current time
             val messageParts = smsManager.divideMessage(finalMessage)
             smsManager.sendMultipartTextMessage(phoneNumber, null, messageParts, null, null)
-            logAdapter.addLog("SMS sent to $phoneNumber: $finalMessage")
+            logAdapter.addLog("SMS sent to $phoneNumber: $finalMessage", "sent") // Add with status 'sent'
             Log.d(TAG, "SMS sent: $finalMessage")
         } catch (e: Exception) {
             Log.e(TAG, "SMS sending failed", e)
@@ -294,5 +337,12 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null) // Stop the periodic task when activity is destroyed
+
+        // Unregister local broadcast receiver
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(acknowledgmentReceiver)
+    }
+
+    fun onAcknowledgmentReceived(id: String) {
+        logAdapter.updateLogStatus(id, "acknowledged")
     }
 }
