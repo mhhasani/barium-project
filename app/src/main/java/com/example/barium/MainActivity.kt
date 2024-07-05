@@ -2,7 +2,6 @@ package com.example.barium
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
@@ -19,13 +18,17 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.android.material.textfield.TextInputLayout
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
 class MainActivity : AppCompatActivity() {
     private lateinit var locationManager: LocationManager
     private lateinit var textView: TextView
-    private lateinit var stateInfoTextView: TextView
-    private lateinit var thresholdButton: Button
+    private lateinit var phoneNumberEditText: EditText
+    private lateinit var thresholdEditText: EditText
+    private lateinit var saveButton: Button
+    private lateinit var logRecyclerView: RecyclerView
+    private lateinit var logAdapter: LogAdapter
     private var signalThreshold = -100 // Default threshold for signal strength in dBm
     private var currentLocation: Location? = null
     private var previousSignalState: Boolean? = null
@@ -45,8 +48,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         initializeViews()
-        setupThresholdButton()
-        showPhoneNumberInputDialog()
+        setupSaveButton()
         initializeLocationManager()
         requestPermissions()
         startSignalStrengthCheck()
@@ -54,12 +56,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         textView = findViewById(R.id.textView)
-        stateInfoTextView = findViewById(R.id.stateInfoTextView)
-        thresholdButton = findViewById(R.id.thresholdButton)
+        phoneNumberEditText = findViewById(R.id.phoneNumberEditText)
+        thresholdEditText = findViewById(R.id.thresholdEditText)
+        saveButton = findViewById(R.id.saveButton)
+        logRecyclerView = findViewById(R.id.logRecyclerView)
+        logAdapter = LogAdapter()
+        logRecyclerView.layoutManager = LinearLayoutManager(this)
+        logRecyclerView.adapter = logAdapter
     }
 
-    private fun setupThresholdButton() {
-        thresholdButton.setOnClickListener { showThresholdInputDialog() }
+    private fun setupSaveButton() {
+        saveButton.setOnClickListener {
+            userPhoneNumber = phoneNumberEditText.text.toString()
+            signalThreshold = thresholdEditText.text.toString().toInt()
+            updateStateInfo()
+        }
     }
 
     private fun initializeLocationManager() {
@@ -130,6 +141,7 @@ class MainActivity : AppCompatActivity() {
             val finalMessage = "1234: $message" // Adding a simple password for security
             val messageParts = smsManager.divideMessage(finalMessage)
             smsManager.sendMultipartTextMessage(phoneNumber, null, messageParts, null, null)
+            logAdapter.addLog("SMS sent to $phoneNumber: $finalMessage")
             Log.d(TAG, "SMS sent: $finalMessage")
         } catch (e: Exception) {
             Log.e(TAG, "SMS sending failed", e)
@@ -223,40 +235,7 @@ class MainActivity : AppCompatActivity() {
         val cellInfo = getCellInfo()
         val signalStrength = getSignalStrength()
         val stateInfo = "Location: $locationInfo\nCell Info: $cellInfo\nSignal Strength: $signalStrength dBm\nThreshold: $signalThreshold dBm"
-        stateInfoTextView.text = stateInfo
-    }
-
-    private fun showThresholdInputDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Set Signal Threshold")
-
-        val input = EditText(this)
-        input.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_SIGNED
-        builder.setView(input)
-
-        builder.setPositiveButton("OK") { _, _ ->
-            signalThreshold = input.text.toString().toInt()
-            updateStateInfo()
-        }
-        builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
-
-        builder.show()
-    }
-
-    private fun showPhoneNumberInputDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Enter Phone Number")
-
-        val input = EditText(this)
-        input.inputType = android.text.InputType.TYPE_CLASS_PHONE
-        builder.setView(input)
-
-        builder.setPositiveButton("OK") { _, _ ->
-            userPhoneNumber = input.text.toString()
-        }
-        builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
-
-        builder.show()
+        textView.text = stateInfo
     }
 
     private fun startSignalStrengthCheck() {
