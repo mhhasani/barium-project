@@ -1,25 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:padding="16dp"
+    android:background="@color/white">
 
     <TextView
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="State Information:"
-        android:textSize="18sp"
-        android:layout_centerInParent="true"/>
+        android:text="Signal Strength Monitor"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="16dp"/>
 
     <TextView
         android:id="@+id/stateInfoTextView"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="N/A"
-        android:textSize="18sp"
+        android:text="State Info"
+        android:textSize="16sp"
+        android:padding="8dp"
+        android:background="@drawable/rounded_background"
         android:layout_below="@id/textView"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"/>
+        android:layout_marginBottom="16dp"/>
 
     <Button
         android:id="@+id/thresholdButton"
@@ -28,5 +35,6 @@
         android:text="Set Threshold"
         android:layout_below="@id/stateInfoTextView"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"/>
+        android:background="@drawable/button_background"
+        android:textColor="@color/white"/>
 </RelativeLayout>

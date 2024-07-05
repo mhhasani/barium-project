@@ -3,10 +3,6 @@ package com.example.barium
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
@@ -23,6 +19,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.textfield.TextInputLayout
 
 class MainActivity : AppCompatActivity() {
     private lateinit var locationManager: LocationManager
@@ -33,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private var currentLocation: Location? = null
     private var previousSignalState: Boolean? = null
     private val handler = Handler(Looper.getMainLooper())
+    private var userPhoneNumber: String? = null
 
     companion object {
         private const val TAG = "MainActivity"
@@ -48,6 +46,7 @@ class MainActivity : AppCompatActivity() {
 
         initializeViews()
         setupThresholdButton()
+        showPhoneNumberInputDialog()
         initializeLocationManager()
         requestPermissions()
         startSignalStrengthCheck()
@@ -214,7 +213,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 "Info: Signal strength is back to normal: $signalStrength dBm, Location: $locationInfo, Cell Info: $cellInfo"
             }
-            sendSms("09926715574", message)
+            userPhoneNumber?.let { sendSms(it, message) }
             previousSignalState = currentState
         }
     }
@@ -238,6 +237,22 @@ class MainActivity : AppCompatActivity() {
         builder.setPositiveButton("OK") { _, _ ->
             signalThreshold = input.text.toString().toInt()
             updateStateInfo()
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
+
+        builder.show()
+    }
+
+    private fun showPhoneNumberInputDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Enter Phone Number")
+
+        val input = EditText(this)
+        input.inputType = android.text.InputType.TYPE_CLASS_PHONE
+        builder.setView(input)
+
+        builder.setPositiveButton("OK") { _, _ ->
+            userPhoneNumber = input.text.toString()
         }
         builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
 
