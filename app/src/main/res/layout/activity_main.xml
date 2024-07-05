@@ -1,10 +1,31 @@
-<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
     android:padding="16dp">
+
+    <TextView
+        android:id="@+id/latitudeTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Latitude"
+        android:textSize="16sp"
+        android:padding="8dp"
+        android:background="@drawable/rounded_background"
+        android:layout_alignParentTop="true"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:id="@+id/longitudeTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Longitude"
+        android:textSize="16sp"
+        android:padding="8dp"
+        android:background="@drawable/rounded_background"
+        android:layout_below="@id/latitudeTextView"
+        android:layout_marginBottom="8dp"/>
 
     <TextView
         android:id="@+id/textView"
@@ -14,7 +35,7 @@
         android:textSize="16sp"
         android:padding="8dp"
         android:background="@drawable/rounded_background"
-        android:layout_alignParentTop="true"
+        android:layout_below="@id/longitudeTextView"
         android:layout_marginBottom="16dp"/>
 
     <EditText

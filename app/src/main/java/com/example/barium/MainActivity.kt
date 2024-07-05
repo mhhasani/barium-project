@@ -34,6 +34,8 @@ class MainActivity : AppCompatActivity() {
     private var previousSignalState: Boolean? = null
     private val handler = Handler(Looper.getMainLooper())
     private var userPhoneNumber: String? = null
+    private lateinit var latitudeTextView: TextView
+    private lateinit var longitudeTextView: TextView
 
     companion object {
         private const val TAG = "MainActivity"
@@ -55,6 +57,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initializeViews() {
+        latitudeTextView = findViewById(R.id.latitudeTextView)
+        longitudeTextView = findViewById(R.id.longitudeTextView)
         textView = findViewById(R.id.textView)
         phoneNumberEditText = findViewById(R.id.phoneNumberEditText)
         thresholdEditText = findViewById(R.id.thresholdEditText)
@@ -108,7 +112,34 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, locationListener)
+            locationManager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                1000L, // حداقل فاصله زمانی بین به‌روزرسانی‌ها (1 ثانیه)
+                0f, // حداقل فاصله بین به‌روزرسانی‌ها (0 متر)
+                locationListener
+            )
+            locationManager.requestLocationUpdates(
+                LocationManager.NETWORK_PROVIDER,
+                1000L, // حداقل فاصله زمانی بین به‌روزرسانی‌ها (1 ثانیه)
+                0f, // حداقل فاصله بین به‌روزرسانی‌ها (0 متر)
+                locationListener
+            )
+            updateLocationWithLastKnownLocation()
+        }
+    }
+
+    private fun updateLocationWithLastKnownLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            val lastKnownGPSLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            val lastKnownNetworkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+
+            if (lastKnownGPSLocation != null && (lastKnownNetworkLocation == null || lastKnownGPSLocation.time > lastKnownNetworkLocation.time)) {
+                currentLocation = lastKnownGPSLocation
+            } else if (lastKnownNetworkLocation != null) {
+                currentLocation = lastKnownNetworkLocation
+            }
+
+            updateStateInfo()
         }
     }
 
@@ -160,20 +191,25 @@ class MainActivity : AppCompatActivity() {
         if (cellInfoList.isNotEmpty()) {
             val cellInfo = cellInfoList[0]
             return when (cellInfo) {
-                is CellInfoGsm -> "GSM Cell Info: ${cellInfo.cellIdentity}"
-                is CellInfoLte -> "LTE Cell Info: ${cellInfo.cellIdentity}"
-                is CellInfoCdma -> "CDMA Cell Info: ${cellInfo.cellIdentity}"
-                is CellInfoWcdma -> "WCDMA Cell Info: ${cellInfo.cellIdentity}"
+                is CellInfoGsm -> "GSM Cell ID: ${cellInfo.cellIdentity.cid}"
+                is CellInfoLte -> "LTE Cell ID: ${cellInfo.cellIdentity.ci}"
+                is CellInfoCdma -> "CDMA Cell ID: ${cellInfo.cellIdentity.basestationId}"
+                is CellInfoWcdma -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    "WCDMA Cell ID: ${cellInfo.cellIdentity.cid}"
+                } else {
+                    "WCDMA Cell ID: Not available"
+                }
                 else -> "Unknown Cell Info"
             }
         }
         return "No Cell Info Available"
     }
 
+
     @SuppressLint("MissingPermission")
     private fun getSignalStrength(): Int {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return -1 // Permission not granted
+            return MIN_SIGNAL_STRENGTH
         }
 
         val telephonyManager = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
@@ -188,24 +224,27 @@ class MainActivity : AppCompatActivity() {
                 is CellInfoWcdma -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
                     cellInfo.cellSignalStrength.dbm
                 } else {
-                    -1 // Not available
+                    MIN_SIGNAL_STRENGTH
                 }
-                else -> -1 // Unknown signal strength
+                else -> MIN_SIGNAL_STRENGTH
             }
 
             if (signalStrength in MIN_SIGNAL_STRENGTH..MAX_SIGNAL_STRENGTH) {
                 return signalStrength
             }
         }
-        return -1 // No valid signal strength available
+        return MIN_SIGNAL_STRENGTH
     }
 
-    private fun getLocationInfo(): String {
+    private fun getLocationInfo(): Pair<String, String> {
         currentLocation?.let {
-            return "Lat: ${it.latitude}, Lng: ${it.longitude}"
+            val latitude = "Lat: ${it.latitude}"
+            val longitude = "Lng: ${it.longitude}"
+            return Pair(latitude, longitude)
         }
-        return "Location not available"
+        return Pair("Lat: Not available", "Lng: Not available")
     }
+
 
     private fun checkSignalStrength() {
         val signalStrength = getSignalStrength()
@@ -231,17 +270,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateStateInfo() {
-        val locationInfo = getLocationInfo()
+        val (latitude, longitude) = getLocationInfo()
         val cellInfo = getCellInfo()
         val signalStrength = getSignalStrength()
-        val stateInfo = "Location: $locationInfo\nCell Info: $cellInfo\nSignal Strength: $signalStrength dBm\nThreshold: $signalThreshold dBm"
+        val signalStrengthInfo = if (signalStrength == MIN_SIGNAL_STRENGTH) "Signal strength not available" else "$signalStrength dBm"
+        latitudeTextView.text = latitude
+        longitudeTextView.text = longitude
+        val stateInfo = "Cell Info: $cellInfo\nSignal Strength: $signalStrengthInfo\nThreshold: $signalThreshold dBm"
         textView.text = stateInfo
     }
+
 
     private fun startSignalStrengthCheck() {
         handler.post(object : Runnable {
             override fun run() {
                 checkSignalStrength()
+                updateStateInfo() // اضافه کردن این خط برای اطمینان از به‌روزرسانی هر ثانیه
                 handler.postDelayed(this, SIGNAL_CHECK_INTERVAL)
             }
         })
